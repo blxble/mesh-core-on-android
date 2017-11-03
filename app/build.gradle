@@ -1,0 +1,66 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion "26.0.1"
+
+    defaultConfig {
+        applicationId "com.blxble.meshPanel"
+        minSdkVersion 23
+        targetSdkVersion 24
+        multiDexEnabled true
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_7
+            targetCompatibility JavaVersion.VERSION_1_7
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+    
+//    sourceSets {
+//        main {
+//            res.srcDirs = ['src/main/res']
+//            assets.srcDirs = ['src/main/assets']
+//            manifest.srcFile 'src/main/AndroidManifest.xml'
+//            jni.srcDirs = []
+//            jniLibs.srcDirs = ['src/main/jniLibs']
+//        }
+//    }
+//    externalNativeBuild {
+//        ndkBuild {
+//            path file("src\\main\\jni\\Android.mk")
+//        }
+//    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:24.2.1'
+    compile 'com.android.support:gridlayout-v7:24.2.1'
+    compile 'com.android.support:design:24.2.1'
+    compile 'com.android.support:cardview-v7:24.2.1'
+    compile 'com.squareup.picasso:picasso:2.5.2'
+    compile 'org.litepal.android:core:1.5.1'
+    compile 'com.github.AlphaBoom:ClassifyView:0.5.2'
+    compile 'com.android.support:multidex:1.0.1'
+    compile 'de.hdodenhof:circleimageview:2.1.0'
+    compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'com.github.dexafree:materiallist:3.2.1'
+    compile 'jp.wasabeef:recyclerview-animators:2.0.0'
+    compile 'com.github.AlphaBoom:ClassifyView:0.5.2'
+    compile('com.afollestad.material-dialogs:core:0.9.4.7') {
+        transitive = false
+    }
+    compile('me.zhanghai.android.materialprogressbar:library:1.4.1') {
+        transitive = false
+    }
+    compile('com.afollestad.material-dialogs:commons:0.9.4.7') {
+        transitive = false
+    }
+}

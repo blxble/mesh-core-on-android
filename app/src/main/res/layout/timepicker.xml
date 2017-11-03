@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#ffffff"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        >
+
+        <LinearLayout
+            android:id="@+id/timePicker1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+            <com.blxble.meshpanel.element.view.NumberPickerView
+                android:id="@+id/year"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:npv_ShowCount="5"
+                app:npv_HintText="@string/hint_year"
+                app:npv_ItemPaddingHorizontal="2dp"
+                app:npv_ItemPaddingVertical="5dp"
+                app:npv_TextSizeNormal="14sp"
+                app:npv_TextSizeSelected="18sp"
+                app:npv_WrapSelectorWheel="true"
+                app:npv_MarginStartOfHint="3sp"
+                app:npv_DividerColor="@color/number_picker_view_divider_color"
+                app:npv_TextColorSelected="@color/number_picker_view_value_color"
+                app:npv_TextColorNormal="@color/number_picker_view_item_color"
+                />
+
+            <com.blxble.meshpanel.element.view.NumberPickerView
+                android:id="@+id/month"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:npv_ShowCount="5"
+                app:npv_HintText="@string/hint_month"
+                app:npv_ItemPaddingHorizontal="2dp"
+                app:npv_ItemPaddingVertical="5dp"
+                app:npv_TextSizeNormal="14sp"
+                app:npv_TextSizeSelected="18sp"
+                app:npv_WrapSelectorWheel="true"
+                app:npv_MarginStartOfHint="3sp"
+                app:npv_DividerColor="@color/number_picker_view_divider_color"
+                app:npv_TextColorSelected="@color/number_picker_view_value_color"
+                app:npv_TextColorNormal="@color/number_picker_view_item_color"
+                />
+
+            <com.blxble.meshpanel.element.view.NumberPickerView
+                android:id="@+id/day"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:npv_ShowCount="5"
+                app:npv_HintText="@string/hint_day"
+                app:npv_ItemPaddingHorizontal="2dp"
+                app:npv_ItemPaddingVertical="5dp"
+                app:npv_TextSizeNormal="14sp"
+                app:npv_TextSizeSelected="18sp"
+                app:npv_WrapSelectorWheel="true"
+                app:npv_MarginStartOfHint="3sp"
+                app:npv_DividerColor="@color/number_picker_view_divider_color"
+                app:npv_TextColorSelected="@color/number_picker_view_value_color"
+                app:npv_TextColorNormal="@color/number_picker_view_item_color"
+                />
+
+            <com.blxble.meshpanel.element.view.NumberPickerView
+                android:id="@+id/hour"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:npv_ShowCount="5"
+                app:npv_HintText="@string/hint_hour"
+                app:npv_ItemPaddingHorizontal="2dp"
+                app:npv_ItemPaddingVertical="5dp"
+                app:npv_TextSizeNormal="14sp"
+                app:npv_TextSizeSelected="18sp"
+                app:npv_WrapSelectorWheel="true"
+                app:npv_MarginStartOfHint="3sp"
+                app:npv_DividerColor="@color/number_picker_view_divider_color"
+                app:npv_TextColorSelected="@color/number_picker_view_value_color"
+                app:npv_TextColorNormal="@color/number_picker_view_item_color"
+                />
+
+            <com.blxble.meshpanel.element.view.NumberPickerView
+                android:id="@+id/min"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:npv_ShowCount="5"
+                app:npv_HintText="@string/hint_minute"
+                app:npv_ItemPaddingHorizontal="2dp"
+                app:npv_ItemPaddingVertical="5dp"
+                app:npv_TextSizeNormal="14sp"
+                app:npv_TextSizeSelected="18sp"
+                app:npv_WrapSelectorWheel="true"
+                app:npv_MarginStartOfHint="3sp"
+                app:npv_DividerColor="@color/number_picker_view_divider_color"
+                app:npv_TextColorSelected="@color/number_picker_view_value_color"
+                app:npv_TextColorNormal="@color/number_picker_view_item_color"
+                />
+
+            <com.blxble.meshpanel.element.view.NumberPickerView
+                android:id="@+id/second"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:npv_ShowCount="5"
+                app:npv_HintText="@string/hint_second"
+                app:npv_ItemPaddingHorizontal="2dp"
+                app:npv_ItemPaddingVertical="5dp"
+                app:npv_TextSizeNormal="14sp"
+                app:npv_TextSizeSelected="18sp"
+                app:npv_WrapSelectorWheel="true"
+                app:npv_MarginStartOfHint="3sp"
+                app:npv_DividerColor="@color/number_picker_view_divider_color"
+                app:npv_TextColorSelected="@color/number_picker_view_value_color"
+                app:npv_TextColorNormal="@color/number_picker_view_item_color"
+                />
+        </LinearLayout>
+
+    </FrameLayout>
+
+</LinearLayout>
