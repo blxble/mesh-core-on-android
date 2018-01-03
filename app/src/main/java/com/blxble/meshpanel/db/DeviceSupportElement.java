@@ -16,8 +16,8 @@ import java.util.List;
 
 public class DeviceSupportElement extends DataSupport {
     public static final String TAG = "DeviceSupportElement";
-    public static short SUPPORT_SYSTEM_ELEMENT_INDEX = 0;
-    public static short SUPPORT_CUSTOM_ELEMENT_INDEX = 1;
+    public static byte SUPPORT_SYSTEM_ELEMENT_INDEX = 0;
+    public static byte SUPPORT_CUSTOM_ELEMENT_INDEX = 1;
     private long id;
     private short elementIdx;
     private short modelId;

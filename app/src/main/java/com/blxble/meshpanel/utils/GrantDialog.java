@@ -28,6 +28,7 @@ public class GrantDialog {
         Log.i(TAG, "userChoosed: "+ choice);
         if (choice == USER_YES) {
             MeshApplication.getDeviceManager().setState(ActiveDevice.DEVICE_ACTIVE_CONFIG);
+			MeshApplication.getMeshSvc().setProxyClient(false, (short)0, (byte)0, 0, null);
             MeshApplication.getMeshSvc().grantNewProposer(uuid, bdAddr);
         } else if (choice == USER_NO) {
             MeshApplication.getDeviceManager().setState(ActiveDevice.DEVICE_ACTIVE_NEW);

@@ -62,12 +62,12 @@ public class JniCallbacks extends MeshService {
 
 		public native void initCallbackNative();
 		public native void advReportNative(int connType,int addrType,byte[] addr,byte[] data,int rssi);
-		public native void connectionChangedNative(byte[] addr,boolean connected, int status);
-		public native void provServerPduSentNative();
-		public native void provServerPduInNative(byte[] pdu);
-		public native void provClientPduSentNative();
-		public native void provClientPduInNative(byte[] pdu);
-		public native void proxyPduInNative(byte[] pdu);
+		public native void connectionChangedNative(byte[] bdAddr,boolean connected, int status);
+		public native void provServerPduSentNative(byte[] bdAddr);
+		public native void provServerPduInNative(byte[] bdAddr,byte[] pdu);
+		public native void provClientPduSentNative(byte[] bdAddr);
+		public native void provClientPduInNative(byte[] bdAddr,byte[] pdu);
+		public native void proxyPduInNative(byte[] bdAddr,byte[] pdu);
 
 		public JniCallbacks(BluetoothManager manager) {
 			mBluetoothManager = manager;
@@ -200,6 +200,18 @@ public class JniCallbacks extends MeshService {
 			initCallbackNative();
 		}
 
+		private byte[] stringToAddress(String addrStr) {
+			byte addr[] = new byte[6];
+			addr[0] = (byte)Integer.decode("0x"+addrStr.substring(0,2)).intValue();
+			addr[1] = (byte)Integer.decode("0x"+addrStr.substring(3,5)).intValue();
+			addr[2] = (byte)Integer.decode("0x"+addrStr.substring(6,8)).intValue();
+			addr[3] = (byte)Integer.decode("0x"+addrStr.substring(9,11)).intValue();
+			addr[4] = (byte)Integer.decode("0x"+addrStr.substring(12,14)).intValue();
+			addr[5] = (byte)Integer.decode("0x"+addrStr.substring(15,17)).intValue();
+
+			return addr;
+		}
+
 		public void pbgattServerAdd() {
 			mBluetoothLeAdvertiser = mBluetoothAdapter.getBluetoothLeAdvertiser();
 			if(mBluetoothLeAdvertiser == null){
@@ -304,13 +316,7 @@ public class JniCallbacks extends MeshService {
 					if (mProvClientDev.getPeerDevice() != null) {
 						if (mProvClientDev.getPeerDevice().equals(device)) {
 							String strAddr = device.getAddress();
-							byte[] addr = {0, 0, 0, 0, 0, 0};
-							addr[0] = (byte)Integer.decode("0x"+strAddr.substring(0,2)).intValue();
-							addr[1] = (byte)Integer.decode("0x"+strAddr.substring(3,5)).intValue();
-							addr[2] = (byte)Integer.decode("0x"+strAddr.substring(6,8)).intValue();
-							addr[3] = (byte)Integer.decode("0x"+strAddr.substring(9,11)).intValue();
-							addr[4] = (byte)Integer.decode("0x"+strAddr.substring(12,14)).intValue();
-							addr[5] = (byte)Integer.decode("0x"+strAddr.substring(15,17)).intValue();
+							byte[] addr = stringToAddress(strAddr);
 							
 				            if (newState == BluetoothProfile.STATE_CONNECTED) {
 								if (mProvClientDev.getConnectionState() == PeerDevice.STATE_DISCONNECTED) {
@@ -360,7 +366,10 @@ public class JniCallbacks extends MeshService {
 				if (mProvClientDev.getPeerDevice().equals(device)) {
 					if (characteristic.getUuid().compareTo(UUID.fromString(UUID_PB_CHAR_DATA_IN)) == 0)
 					{
-						provServerPduInNative(value);
+						String strAddr=device.getAddress();
+						byte[] addr = stringToAddress(strAddr);
+						
+						provServerPduInNative(addr, value);
 					}
 				}
 			}
@@ -415,13 +424,7 @@ public class JniCallbacks extends MeshService {
 				int addrType = 0;
 				
 				String strAddr=result.getDevice().getAddress();
-				byte[] addr = {0, 0, 0, 0, 0, 0};
-				addr[0] = (byte)Integer.decode("0x"+strAddr.substring(0,2)).intValue();
-				addr[1] = (byte)Integer.decode("0x"+strAddr.substring(3,5)).intValue();
-				addr[2] = (byte)Integer.decode("0x"+strAddr.substring(6,8)).intValue();
-				addr[3] = (byte)Integer.decode("0x"+strAddr.substring(9,11)).intValue();
-				addr[4] = (byte)Integer.decode("0x"+strAddr.substring(12,14)).intValue();
-				addr[5] = (byte)Integer.decode("0x"+strAddr.substring(15,17)).intValue();
+				byte[] addr = stringToAddress(strAddr);
 				
 	            byte[] data = result.getScanRecord().getBytes();
 	            int rssi = result.getRssi();
@@ -469,7 +472,7 @@ public class JniCallbacks extends MeshService {
 			if (peer_dev != null) { 
 				if (peer_dev.getConnectionState() != PeerDevice.STATE_DISCONNECTED) {
 					if (D) {
-						Log.w(TAG, "Already connected");
+						Log.w(TAG, "Already connected, svc="+svc);
 					}
 					return false;
 				}
@@ -521,7 +524,7 @@ public class JniCallbacks extends MeshService {
 			BluetoothGattServer server;
 			BluetoothGatt client;
 			PeerDevice dev = null;
-			
+
 			if (svc == SVC_PROVISION) {
 				if (mProvClientDev != null) {
 					if (mProvClientDev.getConnectionState() != PeerDevice.STATE_DISCONNECTED) {
@@ -537,6 +540,8 @@ public class JniCallbacks extends MeshService {
 			} else {
 				dev = mProxyDev;
 			}
+
+			Log.i(TAG, "disconnect, svc="+svc+", dev="+dev);
 
 			if (dev != null) {
 				if (dev.getConnectionState() != PeerDevice.STATE_DISCONNECTED) {
@@ -610,13 +615,7 @@ public class JniCallbacks extends MeshService {
 						}
 
 						String strAddr=gatt.getDevice().getAddress();
-						byte[] addr = {0, 0, 0, 0, 0, 0};
-						addr[0] = (byte)Integer.decode("0x"+strAddr.substring(0,2)).intValue();
-						addr[1] = (byte)Integer.decode("0x"+strAddr.substring(3,5)).intValue();
-						addr[2] = (byte)Integer.decode("0x"+strAddr.substring(6,8)).intValue();
-						addr[3] = (byte)Integer.decode("0x"+strAddr.substring(9,11)).intValue();
-						addr[4] = (byte)Integer.decode("0x"+strAddr.substring(12,14)).intValue();
-						addr[5] = (byte)Integer.decode("0x"+strAddr.substring(15,17)).intValue();
+						byte[] addr = stringToAddress(strAddr);
 
 						connectionChangedNative(addr, false, status);
 					}
@@ -627,13 +626,7 @@ public class JniCallbacks extends MeshService {
 	        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
 	            if (status == BluetoothGatt.GATT_SUCCESS) {
 					String strAddr=gatt.getDevice().getAddress();
-					byte[] addr = {0, 0, 0, 0, 0, 0};
-					addr[0] = (byte)Integer.decode("0x"+strAddr.substring(0,2)).intValue();
-					addr[1] = (byte)Integer.decode("0x"+strAddr.substring(3,5)).intValue();
-					addr[2] = (byte)Integer.decode("0x"+strAddr.substring(6,8)).intValue();
-					addr[3] = (byte)Integer.decode("0x"+strAddr.substring(9,11)).intValue();
-					addr[4] = (byte)Integer.decode("0x"+strAddr.substring(12,14)).intValue();
-					addr[5] = (byte)Integer.decode("0x"+strAddr.substring(15,17)).intValue();
+					byte[] addr = stringToAddress(strAddr);
 
 					if (mProxyDev != null) {
 						if (mProxyDev.getConnectionState() == PeerDevice.STATE_CONNECTING) {
@@ -705,9 +698,13 @@ public class JniCallbacks extends MeshService {
 	        public void onCharacteristicChanged(BluetoothGatt gatt,
 	                                            BluetoothGattCharacteristic characteristic) {
 	            if (characteristic.getUuid().compareTo(UUID.fromString(UUID_PROXY_CHAR_DATA_OUT)) == 0) {
-					proxyPduInNative(characteristic.getValue());
+					String strAddr=gatt.getDevice().getAddress();
+					byte[] addr = stringToAddress(strAddr);
+					proxyPduInNative(addr, characteristic.getValue());
 	           	} else if (characteristic.getUuid().compareTo(UUID.fromString(UUID_PB_CHAR_DATA_OUT)) == 0) {
-	           		provClientPduInNative(characteristic.getValue());
+	           		String strAddr=gatt.getDevice().getAddress();
+					byte[] addr = stringToAddress(strAddr);
+	           		provClientPduInNative(addr, characteristic.getValue());
 	           	}
 	        }
 
@@ -723,7 +720,9 @@ public class JniCallbacks extends MeshService {
 					}
 				} else if (characteristic.getUuid().compareTo(UUID.fromString(UUID_PB_CHAR_DATA_IN)) == 0) {
 					if (mProvServerDev != null && mProvServerDev.getConnectionState() == PeerDevice.STATE_CONNECTED) {
-						provClientPduSentNative();
+						String strAddr=gatt.getDevice().getAddress();
+						byte[] addr = stringToAddress(strAddr);
+						provClientPduSentNative(addr);
 						mProvServerDev.onDataOut();
 					}
 				}
@@ -734,13 +733,7 @@ public class JniCallbacks extends MeshService {
                 							BluetoothGattDescriptor descriptor, 
                 							int status) {
                 String strAddr=gatt.getDevice().getAddress();
-				byte[] addr = {0, 0, 0, 0, 0, 0};
-				addr[0] = (byte)Integer.decode("0x"+strAddr.substring(0,2)).intValue();
-				addr[1] = (byte)Integer.decode("0x"+strAddr.substring(3,5)).intValue();
-				addr[2] = (byte)Integer.decode("0x"+strAddr.substring(6,8)).intValue();
-				addr[3] = (byte)Integer.decode("0x"+strAddr.substring(9,11)).intValue();
-				addr[4] = (byte)Integer.decode("0x"+strAddr.substring(12,14)).intValue();
-				addr[5] = (byte)Integer.decode("0x"+strAddr.substring(15,17)).intValue();
+				byte[] addr = stringToAddress(strAddr);
 				
                 if (descriptor.getUuid().compareTo(UUID.fromString(UUID_CCCD)) == 0) {
 					connectionChangedNative(addr, true, status);
@@ -748,7 +741,7 @@ public class JniCallbacks extends MeshService {
 			}
 	    };
 
-		public void sendProvisionPdu(byte[] pdu) {
+		public void sendProvisionPdu(byte[] bdAddr, byte[] pdu) {
 			if (mProvServerDev != null) {
 				if (mProvServerDev.getConnectionState() == PeerDevice.STATE_CONNECTED) {
 					mProvServerDev.dataOut(pdu);
@@ -756,12 +749,13 @@ public class JniCallbacks extends MeshService {
 			} else if (mProvClientDev != null) { 
 				if( mProvClientDev.getConnectionState() == PeerDevice.STATE_CONNECTED) {
 					mProvClientDev.dataOut(pdu);
-					provServerPduSentNative();
+					
+					provServerPduSentNative(bdAddr);
 				}
 			}
 		}
 
-		public void sendProxyPdu(byte[] pdu) {
+		public void sendProxyPdu(byte[] bdAddr, byte[] pdu) {
 			if (mProxyDev != null) { 
 				if ( mProxyDev.getConnectionState() == PeerDevice.STATE_CONNECTED) {
 					mProxyDev.dataOut(pdu);

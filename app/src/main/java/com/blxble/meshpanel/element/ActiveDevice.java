@@ -139,15 +139,17 @@ public class ActiveDevice extends ModelInfo {
             setState(DEVICE_ACTIVE_HOST);
         }
 
-        for (short iElementIdx = DeviceSupportElement.SUPPORT_CUSTOM_ELEMENT_INDEX;
-             iElementIdx < eltInfo.length; iElementIdx++) {
-            MeshElementInfo elt = eltInfo[iElementIdx];
-            if (elt.mMids != null) {
-                for (short n = 0; n < elt.mMids.length; n++) {
-                    Log.i(TAG, "MID: 0x" + Integer.toHexString(elt.mMids[n]&0xFFFF));
-                }
-            }
-        }
+		if (eltInfo != null) {
+	        for (short iElementIdx = DeviceSupportElement.SUPPORT_CUSTOM_ELEMENT_INDEX;
+	             iElementIdx < eltInfo.length; iElementIdx++) {
+	            MeshElementInfo elt = eltInfo[iElementIdx];
+	            if (elt.mMids != null) {
+	                for (short n = 0; n < elt.mMids.length; n++) {
+	                    Log.i(TAG, "MID: 0x" + Integer.toHexString(elt.mMids[n]&0xFFFF));
+	                }
+	            }
+	        }
+		}
     }
 
     public boolean addNewDeviceNode(DbManager dbManager){

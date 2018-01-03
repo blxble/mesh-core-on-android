@@ -30,6 +30,7 @@ public class MeshService extends Service {
     public static final byte MESH_EVENT_ON_CONFIG_DONE = 4;
     public static final byte MESH_EVENT_ON_NETKEY_UPDATED = 5;
     public static final byte MESH_EVENT_ON_APPKEY_UPDATED = 6;
+	public static final byte MESH_EVENT_ON_PROXY_STATUS_CHANGED = 7;
 
     public static final String MESH_ACC_MSG_PAR_KEY_OPCODE = "KEY_OPCODE";
     public static final String MESH_ACC_MSG_PAR_KEY_PARAM = "KEY_PARAM";
@@ -43,18 +44,30 @@ public class MeshService extends Service {
     public static final String MESH_EVT_MSG_PAR_KEY_EXTDATA = "KEY_EXTDATA";
     public static final String MESH_EVT_MSG_PAR_KEY_RSSI = "KEY_RSSI";
     public static final String MESH_EVT_MSG_PAR_KEY_DEVADDR = "KEY_DEVADDR";
-    public static final String MESH_EVT_MSG_PAR_KEY_DEVINFO = "KEY_DEVINFO";
     public static final String MESH_EVT_MSG_PAR_KEY_ELTINFO = "KEY_ELTINFO";
     public static final String MESH_EVT_MSG_PAR_KEY_SUCCESS = "KEY_SUCCESS";
     public static final String MESH_EVT_MSG_PAR_KEY_CONFOP = "KEY_CONFOP";
     public static final String MESH_EVT_MSG_PAR_KEY_NETKEYIDX = "KEY_NETKEYIDX";
     public static final String MESH_EVT_MSG_PAR_KEY_APPKEYIDX = "KEY_APPKEYIDX";
+	public static final String MESH_EVT_MSG_PAR_KEY_PROXYSTATUS = "KEY_PROXYSTATUS";
 
     public static byte MESH_CONF_OP_UNKOWN = 0;
-    public static byte MESH_CONF_OP_ADD_APPKEY = 1;
-    public static byte MESH_CONF_OP_SET_MOD_PUBLICATION = 2;
-    public static byte MESH_CONF_OP_ADD_MOD_SUBSCRIPTION = 3;
-    public static byte MESH_CONF_OP_BIND_MOD_APPKEY = 4;
+	public static byte MESH_CONF_OP_GET_COMPOSITION_DATA = 1;
+    public static byte MESH_CONF_OP_ADD_APPKEY = 2;
+    public static byte MESH_CONF_OP_SET_MOD_PUBLICATION = 3;
+    public static byte MESH_CONF_OP_ADD_MOD_SUBSCRIPTION = 4;
+    public static byte MESH_CONF_OP_BIND_MOD_APPKEY = 5;
+	public static byte MESH_CONF_OP_SET_PROXY = 6;
+
+	public static byte MESH_PROXY_STATE_ENABLE = 0;
+	public static byte MESH_PROXY_STATE_DISABLE = 1;
+
+	public static byte MESH_PROXY_STATUS_CONNECTED = 0;
+	public static byte MESH_PROXY_STATUS_DISCONNECTED = 1;
+	public static byte MESH_PROXY_STATUS_TIMEOUT = 2;
+
+	public static byte MESH_PROXY_CLIENT_POLICY_ANY = 0;
+	public static byte MESH_PROXY_CLIENT_POLICY_DEDICATED = 1;
 
     static {
         System.loadLibrary("MeshCore");
@@ -72,6 +85,8 @@ public class MeshService extends Service {
 
     public native short newAppkeyNative(short netkeyIdx);
 
+	public native void getCompositionDataNative(short devAddr);
+
     public native void addDeviceAppkeyNative(short devAddr, short netkeyIdx, short appkeyIdx);
 
     public native void setDeviceModelPublicationNative(short devAddr, short eltAddr, int mid, short pubAddr, short appkeyIdx, byte ttl);
@@ -79,6 +94,10 @@ public class MeshService extends Service {
     public native void addDeviceModelSubscriptionNative(short devAddr, short eltAddr, int mid, short subsAddr);
 
     public native void bindDeviceModelAppkeyNative(short devAddr, short eltAddr, int mid, int appkeyIdx);
+
+	public native void setDeviceProxyStateNative(short devAddr, byte state);
+
+	public native void setProxyClientNative(boolean enable, short netkeyIdx, byte policy, int timeout, byte[] bdAddr);
 
     public native byte accRegisterElementNative(short[] midArr, int[] vmidArr);
 
@@ -89,6 +108,8 @@ public class MeshService extends Service {
     public native boolean accRespondMessageNative(byte eltIdx, short dstAddr, int appkeyIdx, MeshModelMessageOpcode msgOp, byte[] msgParam);
 
     public native boolean accUnicastMessageNative(byte eltIdx, short dstAddr, MeshModelMessageOpcode msgOp, byte[] msgParam);
+
+	public native MeshElementInfo[] dbGetNodeElementInfoNative(short devAddr);
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -150,9 +171,17 @@ public class MeshService extends Service {
         joinNetworkNative();
     }
 
+	public void setProxyClient(boolean enable, short netkeyIdx, byte policy, int timeout, byte[] bdAddr) {
+		setProxyClientNative(enable, netkeyIdx, policy, timeout, bdAddr);
+	}
+
     public short newAppkey(short netkeyIdx) {
         return newAppkeyNative(netkeyIdx);
     }
+
+	public void getCompositionData(short devAddr) {
+		getCompositionDataNative(devAddr);
+	}
 
     public void addDeviceAppkey(short devAddr, short netkeyIdx, short appkeyIdx) {
         addDeviceAppkeyNative(devAddr, netkeyIdx, appkeyIdx);
@@ -169,6 +198,10 @@ public class MeshService extends Service {
     public void bindDeviceModelAppkey(short devAddr, short eltAddr, int mid, int appkeyIdx) {
         bindDeviceModelAppkeyNative(devAddr, eltAddr, mid, appkeyIdx);
     }
+
+	public void setDeviceProxyState(short devAddr, byte state) {
+		setDeviceProxyState(devAddr, state);
+	}
 
     public byte registerElement(short[] mids, int[] vmids, Handler eltHdl) {
         ElementCallbackInfo eltCbkInfo = new ElementCallbackInfo();
@@ -198,6 +231,10 @@ public class MeshService extends Service {
         return accUnicastMessageNative(eltIdx, dstAddr, msgOp, msgParam);
     }
 
+	public MeshElementInfo[] getNodeElementInfo(short devAddr) {
+		return dbGetNodeElementInfoNative(devAddr);
+	}
+
     public void onNetCreated() {
         Message msg = new Message();
         Bundle bundle = new Bundle();
@@ -226,13 +263,12 @@ public class MeshService extends Service {
         mEvtHdl.sendMessage(msg);
     }
 
-    public void onNewDevice(short devAddr, MeshDeviceInfo devInfo, MeshElementInfo[] eltInfo) {
+    public void onNewDevice(short devAddr, byte[] uuid) {
         Message msg = new Message();
         Bundle bundle = new Bundle();
         bundle.putByte(MESH_EVT_MSG_PAR_KEY_EVENT, MESH_EVENT_ON_NEW_DEVICE);
         bundle.putShort(MESH_EVT_MSG_PAR_KEY_DEVADDR, devAddr);
-        bundle.putParcelable(MESH_EVT_MSG_PAR_KEY_DEVINFO, devInfo);
-        bundle.putParcelableArray(MESH_EVT_MSG_PAR_KEY_ELTINFO, eltInfo);
+        bundle.putByteArray(MESH_EVT_MSG_PAR_KEY_UUID, uuid);
         msg.setData(bundle);
         mEvtHdl.sendMessage(msg);
     }
@@ -271,6 +307,15 @@ public class MeshService extends Service {
         msg.setData(bundle);
         mEvtHdl.sendMessage(msg);
     }
+
+	public void onProxyStatusChanged(byte status) {
+		Message msg = new Message();
+        Bundle bundle = new Bundle();
+        bundle.putByte(MESH_EVT_MSG_PAR_KEY_EVENT, MESH_EVENT_ON_PROXY_STATUS_CHANGED);
+        bundle.putByte(MESH_EVT_MSG_PAR_KEY_PROXYSTATUS, status);
+        msg.setData(bundle);
+        mEvtHdl.sendMessage(msg);
+	}
 
     public void onAccessMessageIndication(byte eltIdx, MeshModelMessageOpcode msgOp, byte[] msgParam,
                                           short srcAddr, int appkeyIdx, byte rssi) {

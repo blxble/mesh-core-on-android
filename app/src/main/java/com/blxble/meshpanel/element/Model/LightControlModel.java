@@ -14,15 +14,15 @@ public class LightControlModel {
 	public static short MESH_NET_LIGHT_CONTROL_MID = (short)0x1001;
 	public static short MESH_NET_LIGHT_PUBLIC_ADDRESS = (short)0x8000;
 	public static short MESH_NET_LIGHT_SUBSCRIBE_ADDRESS = (short)0x8001;
-	public static MeshModelMessageOpcode mNetLightGetOp;
+	public static MeshModelMessageOpcode mNetLightSetOp;
 	public static MeshModelMessageOpcode mNetLightStatusOp;
 
 	public LightControlModel() {
-		mNetLightGetOp = new MeshModelMessageOpcode();
+		mNetLightSetOp = new MeshModelMessageOpcode();
 
-		mNetLightGetOp.mOp0 = (byte)0x82;
-		mNetLightGetOp.mOp1 = (byte)0x02;
-		mNetLightGetOp.mOp2 = (byte)0x00;
+		mNetLightSetOp.mOp0 = (byte)0x82;
+		mNetLightSetOp.mOp1 = (byte)0x02;
+		mNetLightSetOp.mOp2 = (byte)0x00;
 
 		mNetLightStatusOp = new MeshModelMessageOpcode();
 		mNetLightStatusOp.mOp0 = (byte)0x82;
@@ -63,7 +63,7 @@ public class LightControlModel {
 		MeshApplication.getDeviceManager().setNetLightInfo(mElementIdx, presentState);
 	}
 
-	private byte[] packNetLightGet(byte state, byte tid) {
+	private byte[] packNetLightSet(byte state, byte tid) {
 		byte[] msgParam = new byte[4];
 		msgParam[0] = state;
 		msgParam[1] = tid;
@@ -73,7 +73,7 @@ public class LightControlModel {
 	}
 
 	public void turnOnOffLight(byte state, short eltAddr) {
-		byte[] param = packNetLightGet(state, (byte)0);
-		MeshApplication.getMeshSvc().publishMessage(mElementIdx, (byte)0, mNetLightGetOp, param);
+		byte[] param = packNetLightSet(state, (byte)0);
+		MeshApplication.getMeshSvc().publishMessage(mElementIdx, (byte)0, mNetLightSetOp, param);
 	}
 }

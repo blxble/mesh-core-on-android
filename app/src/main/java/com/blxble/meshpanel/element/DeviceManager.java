@@ -22,6 +22,7 @@ public class DeviceManager extends ActiveDevice{
     private static final String TAG = "DeviceManager";
     private DbManager mDbManager;
     private Context mParent;
+	private static byte mEltIndex = 0;
 
     public DeviceManager(Context context) {
         this.mParent = context;
@@ -67,8 +68,7 @@ public class DeviceManager extends ActiveDevice{
                 break;
             case MeshService.MESH_EVENT_ON_NEW_DEVICE:
                 onNewDevice(msg.getData().getShort(MeshService.MESH_EVT_MSG_PAR_KEY_DEVADDR),
-                        (MeshDeviceInfo) msg.getData().getParcelable(MeshService.MESH_EVT_MSG_PAR_KEY_DEVINFO),
-                        (MeshElementInfo[]) msg.getData().getParcelableArray(MeshService.MESH_EVT_MSG_PAR_KEY_ELTINFO));
+                        (byte[]) msg.getData().getByteArray(MeshService.MESH_EVT_MSG_PAR_KEY_UUID));
                 break;
             case MeshService.MESH_EVENT_ON_CONFIG_DONE:
                 boolean success = (msg.getData().getByte(MeshService.MESH_EVT_MSG_PAR_KEY_SUCCESS) == 0) ? false : true;
@@ -81,6 +81,9 @@ public class DeviceManager extends ActiveDevice{
             case MeshService.MESH_EVENT_ON_APPKEY_UPDATED:
                 onAppKeyUpdated(msg.getData().getShort(MeshService.MESH_EVT_MSG_PAR_KEY_APPKEYIDX));
                 break;
+			case MeshService.MESH_EVENT_ON_PROXY_STATUS_CHANGED:
+				onProxyStatusChanged(msg.getData().getByte(MeshService.MESH_EVT_MSG_PAR_KEY_PROXYSTATUS));
+				break;
         }
     }
 
@@ -101,67 +104,95 @@ public class DeviceManager extends ActiveDevice{
         }
     }
 
-    private void onNewDevice(short address, MeshDeviceInfo devInfo, MeshElementInfo[] eltInfo) {
-        Log.i(TAG, "NewDevice, address = " + address +
-                ", dev_info = " + devInfo.mCid + "," + devInfo.mPid + "," + devInfo.mVid + ", eltInfo = " + eltInfo.length);
-        // init parameter
-        storeNewDevice(address, devInfo, eltInfo);
-        MeshApplication.getMeshSvc().addDeviceAppkey(getAddress(), getNetKeyIdx(), getAppKeyIdx());
+    private void onNewDevice(short address, byte[] uuid) {
+        Log.i(TAG, "onNewDevice, address = " + address);
+
+		storeNewDevice(address, null, null);
+
+		if (getBdAddr() != null) {
+			MeshApplication.getMeshSvc().setProxyClient(true, (short)0, MeshService.MESH_PROXY_CLIENT_POLICY_DEDICATED, 500, getBdAddr());
+		}
+
+		MeshApplication.getMeshSvc().getCompositionData(getAddress());
     }
+
+	private void onProxyStatusChanged(byte status) {
+		Log.i(TAG, "onProxyStatusChanged, status="+status);
+		if (status == MeshService.MESH_PROXY_STATUS_CONNECTED) {
+		} else if (status == MeshService.MESH_PROXY_STATUS_DISCONNECTED) {
+			//MeshApplication.getMeshSvc().setProxyClient(true, (short)0, MeshService.MESH_PROXY_CLIENT_POLICY_ANY, 0, null);
+		} else if (status == MeshService.MESH_PROXY_STATUS_TIMEOUT) {
+			MeshApplication.getMeshSvc().setProxyClient(true, (short)0, MeshService.MESH_PROXY_CLIENT_POLICY_DEDICATED, 500, getBdAddr());
+		}
+	}
 
     private void onConfigDone(short address, boolean success, byte confOp) {
         Log.i(TAG, "onConfigDone address=" + address + ", confOp = "+ confOp +", success = " + success);
-        if (confOp == MeshService.MESH_CONF_OP_ADD_APPKEY) {
-            for (short iElementIdx = DeviceSupportElement.SUPPORT_CUSTOM_ELEMENT_INDEX;
-                 iElementIdx < getEltInfo().length; iElementIdx++) {
-                MeshElementInfo elt = getEltInfo(iElementIdx);
-                if (elt.mMids != null) {
-                    for (int iModeIdx = 0; iModeIdx < elt.getMids().length; iModeIdx++){
-                        MeshApplication.getMeshSvc().setDeviceModelPublication(
-                                getAddress(),   // device address
-                                getEltAddr(iElementIdx),   // elt address
-                                elt.getMids(iModeIdx),       // mid
-                                Utility.getPubAddr(elt.getMids(iModeIdx)),   // publish address
-                                getAppKeyIdx(), // app Key idx
-                                getTTL()        // ttl
-                        );
-                    }// end for mode
-                }// endif
-            }// end for element
+
+		
+		if (confOp == MeshService.MESH_CONF_OP_GET_COMPOSITION_DATA) {
+			MeshElementInfo[] eltInfo;
+			eltInfo = MeshApplication.getMeshSvc().getNodeElementInfo(address);
+			MeshDeviceInfo devInfo = new MeshDeviceInfo();
+			devInfo.mCid = 0;
+			devInfo.mPid = 0;
+			devInfo.mVid = 0;
+			storeNewDevice(address, devInfo, eltInfo);
+
+			MeshApplication.getMeshSvc().addDeviceAppkey(getAddress(), getNetKeyIdx(), getAppKeyIdx());
+
+			mEltIndex = DeviceSupportElement.SUPPORT_CUSTOM_ELEMENT_INDEX;
+		} else if (confOp == MeshService.MESH_CONF_OP_ADD_APPKEY) {
+            MeshElementInfo elt = getEltInfo(mEltIndex);
+            if (elt.mMids != null) {
+                MeshApplication.getMeshSvc().setDeviceModelPublication(
+                        getAddress(),   // device address
+                        getEltAddr(mEltIndex),   // elt address
+                        elt.getMids(0),       // mid
+                        Utility.getPubAddr(elt.getMids(0)),   // publish address
+                        getAppKeyIdx(), // app Key idx
+                        getTTL()        // ttl
+                );
+            }// endif
         } else if (confOp == MeshService.MESH_CONF_OP_SET_MOD_PUBLICATION) {
-            for (short iElementIdx = DeviceSupportElement.SUPPORT_CUSTOM_ELEMENT_INDEX;
-                 iElementIdx < getEltInfo().length; iElementIdx++) {
-                MeshElementInfo elt = getEltInfo(iElementIdx);
+                MeshElementInfo elt = getEltInfo(mEltIndex);
                 if (elt.mMids != null) {
-                    for (int iModeIdx = 0; iModeIdx < elt.getMids().length; iModeIdx++){
-                        MeshApplication.getMeshSvc().addDeviceModelSubscription(
-                                getAddress(), // device address
-                                getEltAddr(iElementIdx), // elt address
-                                elt.getMids(iModeIdx),     // mid
-                                Utility.getSubsAddr(elt.getMids(iModeIdx)) // subs address
-                        );
-                    }// end for mode
+                    MeshApplication.getMeshSvc().addDeviceModelSubscription(
+                            getAddress(), // device address
+                            getEltAddr(mEltIndex), // elt address
+                            elt.getMids(0),     // mid
+                            Utility.getSubsAddr(elt.getMids(0)) // subs address
+                    );
                 }// endif
-            }// end for element
         } else if (confOp == MeshService.MESH_CONF_OP_ADD_MOD_SUBSCRIPTION) {
-            for (short iElementIdx = DeviceSupportElement.SUPPORT_CUSTOM_ELEMENT_INDEX;
-                 iElementIdx < getEltInfo().length; iElementIdx++) {
-                MeshElementInfo elt = getEltInfo(iElementIdx);
-                if (elt.mMids != null) {
-                    for (int iModeIdx = 0; iModeIdx < elt.getMids().length; iModeIdx++){
-                        MeshApplication.getMeshSvc().bindDeviceModelAppkey(
-                                getAddress(),  // device address
-                                getEltAddr(iElementIdx),  // elt address
-                                elt.getMids(iModeIdx),      // mid
-                                getAppKeyIdx() // app key idx
-                        );
-                    }// end for mode
-                }// endif
-            }// end for element
+            MeshElementInfo elt = getEltInfo(mEltIndex);
+            if (elt.mMids != null) {
+                MeshApplication.getMeshSvc().bindDeviceModelAppkey(
+                        getAddress(),  // device address
+                        getEltAddr(mEltIndex),  // elt address
+                        elt.getMids(0),      // mid
+                        getAppKeyIdx() // app key idx
+                );
+            }// endif
         } else if (confOp == MeshService.MESH_CONF_OP_BIND_MOD_APPKEY) {
-            // notify user new device arrival
-            boolean bRet = addNewDeviceNode(mDbManager);
-            Log.i(TAG, "onConfigDone address=" + address + ", addNewDeviceNode = "+ bRet + ", State = " + getState());
+			mEltIndex++;
+			if (mEltIndex >= getEltInfo().length) {
+	            // notify user new device arrival
+	            boolean bRet = addNewDeviceNode(mDbManager);
+	            Log.i(TAG, "onConfigDone address=" + address + ", addNewDeviceNode = "+ bRet + ", State = " + getState());
+			} else {
+				MeshElementInfo elt = getEltInfo(mEltIndex);
+	            if (elt.mMids != null) {
+	                MeshApplication.getMeshSvc().setDeviceModelPublication(
+	                        getAddress(),   // device address
+	                        getEltAddr(mEltIndex),   // elt address
+	                        elt.getMids(0),       // mid
+	                        Utility.getPubAddr(elt.getMids(0)),   // publish address
+	                        getAppKeyIdx(), // app Key idx
+	                        getTTL()        // ttl
+	                );
+	            }// endif
+			}
         }
      }
 
